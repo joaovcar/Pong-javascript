@@ -22,7 +22,12 @@ body {
 h1 {
   font-size: 80px;
   letter-spacing: 12px;
-  margin-bottom: 30px;
+  margin-bottom: 25px;
+}
+
+button, select {
+  font-family: inherit;
+  letter-spacing: 2px;
 }
 
 button {
@@ -31,10 +36,9 @@ button {
   border: 2px solid #fff;
   padding: 14px 40px;
   font-size: 20px;
-  font-family: inherit;
   cursor: pointer;
-  letter-spacing: 2px;
   transition: 0.2s;
+  min-width: 300px;
 }
 
 button:hover {
@@ -42,18 +46,68 @@ button:hover {
   color: #000;
 }
 
+.difficulty-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+  color: #aaa;
+  font-size: 14px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+select {
+  width: 300px;
+  background: #111;
+  color: #fff;
+  border: 2px solid #fff;
+  padding: 12px 18px;
+  font-size: 18px;
+  text-align: center;
+  cursor: pointer;
+  outline: none;
+}
+
+select:hover, select:focus {
+  background: #fff;
+  color: #000;
+}
+
 .hint {
-  margin-top: 20px;
+  margin-top: 8px;
   opacity: 0.6;
   font-size: 14px;
+  text-align: center;
 }
 
 canvas {
   border: 2px solid #fff;
   background: #000;
   display: block;
+  max-width: 95vw;
+  max-height: 70vh;
 }
 
 #btn-back {
   margin-top: 20px;
+}
+
+@media (max-width: 850px) {
+  h1 {
+    font-size: 52px;
+    letter-spacing: 8px;
+  }
+
+  button, select {
+    min-width: 260px;
+    width: 260px;
+    font-size: 16px;
+  }
+
+  canvas {
+    width: 95vw;
+    height: auto;
+  }
 }
