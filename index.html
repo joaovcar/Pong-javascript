@@ -1,11 +1,11 @@
-<!DOCTYPE html>
+:<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Pong</title>
   <link rel="stylesheet" href="style.css" />
-  <script src="game.js?v=4" defer></script>
+  <script src="game.js?v=5" defer></script>
 </head>
 <body>
   <div id="menu" class="screen">
@@ -27,7 +27,14 @@
   </div>
 
   <div id="game" class="screen hidden">
-    <canvas id="canvas" width="800" height="500"></canvas>
+    <div class="game-area">
+      <canvas id="canvas" width="800" height="500"></canvas>
+      <div id="end-screen" class="end-screen hidden">
+        <h2 id="end-title">JOGADOR 1 VENCEU!</h2>
+        <p id="end-subtitle">2 x 0 em sets</p>
+        <button id="btn-end-menu" type="button">Voltar ao menu</button>
+      </div>
+    </div>
     <button id="btn-back" type="button">Voltar ao menu</button>
   </div>
 </body>
