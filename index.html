@@ -5,14 +5,25 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Pong</title>
   <link rel="stylesheet" href="style.css" />
-  <script src="game.js?v=3" defer></script>
+  <script src="game.js?v=4" defer></script>
 </head>
 <body>
   <div id="menu" class="screen">
     <h1>PONG</h1>
+
+    <div class="difficulty-box">
+      <span>Dificuldade da IA</span>
+      <select id="difficulty">
+        <option value="easy">Fácil</option>
+        <option value="medium" selected>Médio</option>
+        <option value="hard">Difícil</option>
+      </select>
+    </div>
+
     <button id="btn-ai" type="button">Jogar contra a IA</button>
     <button id="btn-pvp" type="button">2 Jogadores</button>
     <p class="hint">P1: W / S &nbsp;&nbsp; P2: ↑ / ↓</p>
+    <p class="hint">Cada set vai até 5 pontos. Melhor de 3 sets vence.</p>
   </div>
 
   <div id="game" class="screen hidden">
