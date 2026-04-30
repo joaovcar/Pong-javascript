@@ -82,12 +82,52 @@ select:hover, select:focus {
   text-align: center;
 }
 
+.game-area {
+  position: relative;
+  line-height: 0;
+}
+
 canvas {
   border: 2px solid #fff;
   background: #000;
   display: block;
   max-width: 95vw;
   max-height: 70vh;
+}
+
+.end-screen {
+  position: absolute;
+  inset: 2px;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+  background: rgba(0, 0, 0, 0.88);
+  border: 2px solid #fff;
+  text-align: center;
+  line-height: 1.2;
+}
+
+.end-screen.hidden {
+  display: none;
+}
+
+.end-screen h2 {
+  font-size: 46px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+}
+
+.end-screen p {
+  color: #ddd;
+  font-size: 22px;
+  letter-spacing: 2px;
+}
+
+#btn-end-menu {
+  margin-top: 8px;
 }
 
 #btn-back {
@@ -109,5 +149,13 @@ canvas {
   canvas {
     width: 95vw;
     height: auto;
+  }
+
+  .end-screen h2 {
+    font-size: 30px;
+  }
+
+  .end-screen p {
+    font-size: 16px;
   }
 }
