@@ -3,7 +3,11 @@ const gameScreen = document.getElementById('game');
 const btnAI = document.getElementById('btn-ai');
 const btnPVP = document.getElementById('btn-pvp');
 const btnBack = document.getElementById('btn-back');
+const btnEndMenu = document.getElementById('btn-end-menu');
 const difficultySelect = document.getElementById('difficulty');
+const endScreen = document.getElementById('end-screen');
+const endTitle = document.getElementById('end-title');
+const endSubtitle = document.getElementById('end-subtitle');
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
 
@@ -57,6 +61,16 @@ function resetSet(direction = Math.random() < 0.5 ? 1 : -1) {
   resetRound(direction);
 }
 
+function hideEndScreen() {
+  if (endScreen) endScreen.classList.add('hidden');
+}
+
+function showEndScreen(finalMessage) {
+  if (endTitle) endTitle.textContent = `${finalMessage.toUpperCase()}!`;
+  if (endSubtitle) endSubtitle.textContent = `${left.sets} x ${right.sets} em sets`;
+  if (endScreen) endScreen.classList.remove('hidden');
+}
+
 function resetGame() {
   left.score = 0;
   right.score = 0;
@@ -64,6 +78,7 @@ function resetGame() {
   right.sets = 0;
   message = '';
   messageTimer = 0;
+  hideEndScreen();
   resetRound();
 }
 
@@ -240,10 +255,7 @@ function endGame(finalMessage) {
   running = false;
   cancelAnimationFrame(animationId);
   draw();
-  ctx.fillStyle = 'rgba(0,0,0,0.8)';
-  ctx.fillRect(0, H / 2 - 70, W, 140);
-  drawCenteredText(finalMessage, H / 2 - 8, 36);
-  drawCenteredText(`${left.sets} x ${right.sets} em sets`, H / 2 + 34, 22);
+  showEndScreen(finalMessage);
 }
 
 function startGame(selectedMode) {
@@ -251,6 +263,7 @@ function startGame(selectedMode) {
   difficulty = difficultySelect ? difficultySelect.value : 'medium';
   menu.classList.add('hidden');
   gameScreen.classList.remove('hidden');
+  hideEndScreen();
   resetGame();
   running = true;
   cancelAnimationFrame(animationId);
@@ -260,6 +273,7 @@ function startGame(selectedMode) {
 function backToMenu() {
   running = false;
   cancelAnimationFrame(animationId);
+  hideEndScreen();
   gameScreen.classList.add('hidden');
   menu.classList.remove('hidden');
 }
@@ -267,6 +281,7 @@ function backToMenu() {
 btnAI.addEventListener('click', () => startGame('ai'));
 btnPVP.addEventListener('click', () => startGame('pvp'));
 btnBack.addEventListener('click', backToMenu);
+if (btnEndMenu) btnEndMenu.addEventListener('click', backToMenu);
 
 window.addEventListener('keydown', (e) => {
   keys[e.key] = true;
