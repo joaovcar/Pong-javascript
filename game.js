@@ -19,6 +19,8 @@ const PADDLE_SPEED = 6;
 const BALL_SIZE = 12;
 const SET_SCORE = 5;
 const SETS_TO_WIN = 2;
+const MAX_BALL_SPEED = PADDLE_W - 1;
+const MAX_BALL_VY = 10;
 
 const difficulties = {
   easy: { speed: 2.7, reaction: 0.06, error: 55 },
@@ -33,6 +35,10 @@ let animationId = null;
 let message = '';
 let messageTimer = 0;
 let aiTarget = H / 2;
+let aiError = 0;
+let lastBallVxSign = 0;
+let launchTimer = 0;
+let launchDir = 1;
 
 const keys = {};
 const left = { x: 20, y: H / 2 - PADDLE_H / 2, score: 0, sets: 0 };
@@ -42,9 +48,16 @@ const ball = { x: W / 2, y: H / 2, vx: 0, vy: 0 };
 function resetBall(direction = 1) {
   ball.x = W / 2;
   ball.y = H / 2;
+  ball.vx = 0;
+  ball.vy = 0;
+  launchDir = direction;
+  launchTimer = 90;
+}
+
+function launchBall() {
   const angle = (Math.random() * 0.5 - 0.25) * Math.PI;
   const speed = 5;
-  ball.vx = Math.cos(angle) * speed * direction;
+  ball.vx = Math.cos(angle) * speed * launchDir;
   ball.vy = Math.sin(angle) * speed;
 }
 
@@ -52,6 +65,9 @@ function resetRound(direction = Math.random() < 0.5 ? 1 : -1) {
   left.y = H / 2 - PADDLE_H / 2;
   right.y = H / 2 - PADDLE_H / 2;
   aiTarget = H / 2;
+  aiError = 0;
+  lastBallVxSign = 0;
+  launchTimer = 0;
   resetBall(direction);
 }
 
@@ -63,12 +79,14 @@ function resetSet(direction = Math.random() < 0.5 ? 1 : -1) {
 
 function hideEndScreen() {
   if (endScreen) endScreen.classList.add('hidden');
+  if (btnBack) btnBack.style.display = '';
 }
 
 function showEndScreen(finalMessage) {
   if (endTitle) endTitle.textContent = `${finalMessage.toUpperCase()}!`;
   if (endSubtitle) endSubtitle.textContent = `${left.sets} x ${right.sets} em sets`;
   if (endScreen) endScreen.classList.remove('hidden');
+  if (btnBack) btnBack.style.display = 'none';
 }
 
 function resetGame() {
@@ -91,9 +109,13 @@ function movePlayers() {
     if (keys['ArrowDown']) right.y += PADDLE_SPEED;
   } else {
     const settings = difficulties[difficulty];
+    const currentVxSign = Math.sign(ball.vx);
+    if (currentVxSign !== lastBallVxSign) {
+      aiError = (Math.random() * 2 - 1) * settings.error;
+      lastBallVxSign = currentVxSign;
+    }
     const predictedY = ball.y + BALL_SIZE / 2;
-    const error = (Math.random() * 2 - 1) * settings.error;
-    aiTarget += (predictedY + error - aiTarget) * settings.reaction;
+    aiTarget += (predictedY + aiError - aiTarget) * settings.reaction;
     const target = aiTarget - PADDLE_H / 2;
     const diff = target - right.y;
 
@@ -127,16 +149,16 @@ function collidePaddle(paddle, side) {
   if (!touching) return;
 
   if (side === 'left' && ball.vx < 0) {
-    ball.vx *= -1.05;
+    ball.vx = Math.min(Math.abs(ball.vx) * 1.05, MAX_BALL_SPEED);
     const hit = (ball.y + BALL_SIZE / 2 - (paddle.y + PADDLE_H / 2)) / (PADDLE_H / 2);
-    ball.vy += hit * 3;
+    ball.vy = Math.max(-MAX_BALL_VY, Math.min(MAX_BALL_VY, ball.vy + hit * 3));
     ball.x = paddle.x + PADDLE_W;
   }
 
   if (side === 'right' && ball.vx > 0) {
-    ball.vx *= -1.05;
+    ball.vx = -Math.min(Math.abs(ball.vx) * 1.05, MAX_BALL_SPEED);
     const hit = (ball.y + BALL_SIZE / 2 - (paddle.y + PADDLE_H / 2)) / (PADDLE_H / 2);
-    ball.vy += hit * 3;
+    ball.vy = Math.max(-MAX_BALL_VY, Math.min(MAX_BALL_VY, ball.vy + hit * 3));
     ball.x = paddle.x - BALL_SIZE;
   }
 }
@@ -170,14 +192,24 @@ function finishSet(winner) {
 }
 
 function update() {
-  if (messageTimer > 0) messageTimer--;
+  if (messageTimer > 0) {
+    messageTimer--;
+    movePlayers();
+    return;
+  }
+  if (launchTimer > 0) {
+    launchTimer--;
+    if (launchTimer === 0) launchBall();
+    movePlayers();
+    return;
+  }
   movePlayers();
   moveBall();
   collidePaddle(left, 'left');
   collidePaddle(right, 'right');
 
   if (ball.x < 0) scorePoint('right');
-  if (ball.x > W) scorePoint('left');
+  else if (ball.x > W) scorePoint('left');
 }
 
 function drawCenteredText(text, y, size = 28) {
@@ -230,9 +262,17 @@ function draw() {
     ctx.fillRect(0, H / 2 - 42, W, 84);
     drawCenteredText(message, H / 2 + 10, 30);
   }
+
+  if (launchTimer > 0) {
+    const count = Math.ceil(launchTimer / 30);
+    ctx.fillStyle = 'rgba(255,255,255,0.15)';
+    ctx.fillRect(0, H / 2 - 50, W, 100);
+    drawCenteredText(String(count), H / 2 + 18, 64);
+  }
 }
 
 function getAdvantageText() {
+  if (left.sets === 0 && right.sets === 0) return '';
   if (left.sets === right.sets) return 'Sets empatados';
   if (left.sets > right.sets) return 'Vantagem: Jogador 1';
   return mode === 'ai' ? 'Vantagem: IA' : 'Vantagem: Jogador 2';
@@ -261,12 +301,13 @@ function endGame(finalMessage) {
 function startGame(selectedMode) {
   mode = selectedMode;
   difficulty = difficultySelect ? difficultySelect.value : 'medium';
+  cancelAnimationFrame(animationId);
+  running = false;
   menu.classList.add('hidden');
   gameScreen.classList.remove('hidden');
-  hideEndScreen();
   resetGame();
   running = true;
-  cancelAnimationFrame(animationId);
+  if (document.activeElement) document.activeElement.blur();
   loop();
 }
 
@@ -288,6 +329,8 @@ window.addEventListener('keydown', (e) => {
   if (['ArrowUp', 'ArrowDown'].includes(e.key)) e.preventDefault();
 });
 
-window.addEventListener('keyup', (e) => {
-  keys[e.key] = false;
+window.addEventListener('keyup', (e) => { keys[e.key] = false; });
+
+window.addEventListener('blur', () => {
+  Object.keys(keys).forEach(k => { keys[k] = false; });
 });

@@ -97,17 +97,22 @@ canvas {
 
 .end-screen {
   position: absolute;
-  inset: 2px;
+  inset: 0;
   z-index: 10;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 22px;
-  background: rgba(0, 0, 0, 0.88);
-  border: 2px solid #fff;
+  gap: 28px;
+  background: rgba(0, 0, 0, 0.92);
   text-align: center;
   line-height: 1.2;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
 
 .end-screen.hidden {
@@ -115,15 +120,16 @@ canvas {
 }
 
 .end-screen h2 {
-  font-size: 46px;
-  letter-spacing: 4px;
+  font-size: 48px;
+  letter-spacing: 6px;
   text-transform: uppercase;
+  text-shadow: 0 0 20px rgba(255,255,255,0.4);
 }
 
 .end-screen p {
-  color: #ddd;
-  font-size: 22px;
-  letter-spacing: 2px;
+  color: #bbb;
+  font-size: 20px;
+  letter-spacing: 3px;
 }
 
 #btn-end-menu {
