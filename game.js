@@ -10,6 +10,7 @@ const endTitle = document.getElementById('end-title');
 const endSubtitle = document.getElementById('end-subtitle');
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
 const W = canvas.width;
 const H = canvas.height;
@@ -31,6 +32,7 @@ const difficulties = {
 let mode = 'ai';
 let difficulty = 'medium';
 let running = false;
+let paused = false;
 let animationId = null;
 let message = '';
 let messageTimer = 0;
@@ -39,11 +41,31 @@ let aiError = 0;
 let lastBallVxSign = 0;
 let launchTimer = 0;
 let launchDir = 1;
+let flashTimer = 0;
+const trail = [];
 
 const keys = {};
 const left = { x: 20, y: H / 2 - PADDLE_H / 2, score: 0, sets: 0 };
 const right = { x: W - 20 - PADDLE_W, y: H / 2 - PADDLE_H / 2, score: 0, sets: 0 };
 const ball = { x: W / 2, y: H / 2, vx: 0, vy: 0 };
+
+function beep(frequency, duration, type = 'square', volume = 0.18) {
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+  osc.type = type;
+  osc.frequency.setValueAtTime(frequency, audioCtx.currentTime);
+  gain.gain.setValueAtTime(volume, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+  osc.start(audioCtx.currentTime);
+  osc.stop(audioCtx.currentTime + duration);
+}
+
+function soundPaddle() { beep(480, 0.06); }
+function soundWall()   { beep(300, 0.05); }
+function soundScore()  { beep(120, 0.22, 'sine', 0.25); }
 
 function resetBall(direction = 1) {
   ball.x = W / 2;
@@ -68,6 +90,7 @@ function resetRound(direction = Math.random() < 0.5 ? 1 : -1) {
   aiError = 0;
   lastBallVxSign = 0;
   launchTimer = 0;
+  trail.length = 0;
   resetBall(direction);
 }
 
@@ -131,12 +154,16 @@ function movePlayers() {
 }
 
 function moveBall() {
+  trail.push({ x: ball.x, y: ball.y });
+  if (trail.length > 10) trail.shift();
+
   ball.x += ball.vx;
   ball.y += ball.vy;
 
   if (ball.y <= 0 || ball.y + BALL_SIZE >= H) {
     ball.vy *= -1;
     ball.y = Math.max(0, Math.min(H - BALL_SIZE, ball.y));
+    soundWall();
   }
 }
 
@@ -153,6 +180,7 @@ function collidePaddle(paddle, side) {
     const hit = (ball.y + BALL_SIZE / 2 - (paddle.y + PADDLE_H / 2)) / (PADDLE_H / 2);
     ball.vy = Math.max(-MAX_BALL_VY, Math.min(MAX_BALL_VY, ball.vy + hit * 3));
     ball.x = paddle.x + PADDLE_W;
+    soundPaddle();
   }
 
   if (side === 'right' && ball.vx > 0) {
@@ -160,6 +188,7 @@ function collidePaddle(paddle, side) {
     const hit = (ball.y + BALL_SIZE / 2 - (paddle.y + PADDLE_H / 2)) / (PADDLE_H / 2);
     ball.vy = Math.max(-MAX_BALL_VY, Math.min(MAX_BALL_VY, ball.vy + hit * 3));
     ball.x = paddle.x - BALL_SIZE;
+    soundPaddle();
   }
 }
 
@@ -192,6 +221,7 @@ function finishSet(winner) {
 }
 
 function update() {
+  if (paused) return;
   if (messageTimer > 0) {
     messageTimer--;
     movePlayers();
@@ -208,8 +238,8 @@ function update() {
   collidePaddle(left, 'left');
   collidePaddle(right, 'right');
 
-  if (ball.x < 0) scorePoint('right');
-  else if (ball.x > W) scorePoint('left');
+  if (ball.x < 0) { soundScore(); flashTimer = 8; scorePoint('right'); }
+  else if (ball.x > W) { soundScore(); flashTimer = 8; scorePoint('left'); }
 }
 
 function drawCenteredText(text, y, size = 28) {
@@ -234,6 +264,15 @@ function draw() {
   ctx.fillStyle = '#fff';
   ctx.fillRect(left.x, left.y, PADDLE_W, PADDLE_H);
   ctx.fillRect(right.x, right.y, PADDLE_W, PADDLE_H);
+
+  trail.forEach((p, i) => {
+    const alpha = (i + 1) / trail.length * 0.4;
+    ctx.fillStyle = `rgba(255,255,255,${alpha})`;
+    const size = BALL_SIZE * (0.5 + 0.5 * (i / trail.length));
+    ctx.fillRect(p.x + (BALL_SIZE - size) / 2, p.y + (BALL_SIZE - size) / 2, size, size);
+  });
+
+  ctx.fillStyle = '#fff';
   ctx.fillRect(ball.x, ball.y, BALL_SIZE, BALL_SIZE);
 
   ctx.font = '48px Courier New';
@@ -269,6 +308,19 @@ function draw() {
     ctx.fillRect(0, H / 2 - 50, W, 100);
     drawCenteredText(String(count), H / 2 + 18, 64);
   }
+
+  if (flashTimer > 0) {
+    flashTimer--;
+    ctx.fillStyle = `rgba(255,255,255,${flashTimer / 8 * 0.35})`;
+    ctx.fillRect(0, 0, W, H);
+  }
+
+  if (paused) {
+    ctx.fillStyle = 'rgba(0,0,0,0.6)';
+    ctx.fillRect(0, 0, W, H);
+    drawCenteredText('PAUSADO', H / 2 - 16, 42);
+    drawCenteredText('P  ou  ESC  para continuar', H / 2 + 34, 16);
+  }
 }
 
 function getAdvantageText() {
@@ -303,6 +355,7 @@ function startGame(selectedMode) {
   difficulty = difficultySelect ? difficultySelect.value : 'medium';
   cancelAnimationFrame(animationId);
   running = false;
+  paused = false;
   menu.classList.add('hidden');
   gameScreen.classList.remove('hidden');
   resetGame();
@@ -327,6 +380,10 @@ if (btnEndMenu) btnEndMenu.addEventListener('click', backToMenu);
 window.addEventListener('keydown', (e) => {
   keys[e.key] = true;
   if (['ArrowUp', 'ArrowDown'].includes(e.key)) e.preventDefault();
+  if ((e.key === 'p' || e.key === 'P' || e.key === 'Escape') && running) {
+    paused = !paused;
+    if (!paused) draw();
+  }
 });
 
 window.addEventListener('keyup', (e) => { keys[e.key] = false; });
